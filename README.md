@@ -1,4 +1,4 @@
-# rangenet for HESAI X32 LiDAR
+# rangenet for HESAI XT32 LiDAR
 
 `roslaunch rangenet_pp ros1_rangenet.launch`  
 
