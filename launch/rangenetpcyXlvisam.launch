@@ -1,0 +1,10 @@
+<launch>
+    <node pkg="rangenet_pp" type="ros1_demo" name="rangenet_pp" output="screen"/>
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find rangenet_pp)/launch/ros1.rviz"/>
+    
+    <rosparam file="/home/myz/catkin_ws_lvi2.0/src/LVI-SAM-Easyused2.0/config/hesai_lidar.yaml" command="load" />
+    <param name="vins_config_file" type="string" value="/home/myz/catkin_ws_lvi2.0/src/LVI-SAM-Easyused2.0/config/hesai_camera.yaml" />
+    <include file="/home/myz/catkin_ws_lvi2.0/src/LVI-SAM-Easyused2.0/launch/include/module_robot_state_publisher.launch" />
+    <include file="/home/myz/catkin_ws_lvi2.0/src/LVI-SAM-Easyused2.0/launch/include/module_rviz.launch" />
+    <include file="/home/myz/catkin_ws_lvi2.0/src/LVI-SAM-Easyused2.0/launch/include/module_sam.launch" />
+</launch>
