@@ -150,22 +150,30 @@ void ROS_DEMO::pointcloudCallback(
 
   //hesai
   int offset_intensity = 16;
+  int offset_timestamp = 24;
   int offset_ring = 32;
   int ring_index = 5;
 
+  //XYZITR 4 4 4 4 8 2
+  //offset(origin) 0 4 8 16! 24! 32 (34)
   // 获取intensity,ring字段 fields
   std::vector<float> intensity;
   std::vector<uint16_t> ring;
+  std::vector<double> timestamp;
   intensity.resize(pc_msg->width * pc_msg->height);
   ring.resize(pc_msg->width * pc_msg->height);
+  timestamp.resize(pc_msg->width * pc_msg->height);
   for(int i = 0; i < pc_msg->width * pc_msg->height; i++) {
     memcpy(&intensity[i], &pc_msg->data[i * pc_msg->point_step + offset_intensity], sizeof(float));
     memcpy(&ring[i], &pc_msg->data[i * pc_msg->point_step + offset_ring], sizeof(uint16_t));
+    memcpy(&timestamp[i], &pc_msg->data[i * pc_msg->point_step + offset_timestamp], sizeof(double));
   }
-  sensor_msgs::PointField intensity_field, ring_field;
-  intensity_field = pc_msg->fields[3];
-  ring_field = pc_msg->fields[ring_index];
-  cout<<pc_msg->fields<<endl;
+  sensor_msgs::PointField intensity_field, ring_field, time_field;
+  intensity_field = pc_msg->fields[3];//原始的intensity channel
+  time_field = pc_msg->fields[4];//原始的time channel
+  ring_field = pc_msg->fields[5];//原始的ring channel
+
+
 
   // ROS 消息类型 -> PCL 点云类型
   pcl::PointCloud<PointType>::Ptr pc_ros(new pcl::PointCloud<PointType>());
@@ -214,14 +222,18 @@ void ROS_DEMO::pointcloudCallback(
   sensor_msgs::PointCloud2 rosclassifiedRGB_msg;
   pcl::toROSMsg(classified_cloud, rosclassifiedRGB_msg);
   rosclassifiedRGB_msg.header = pc_msg->header;
-  pub_classifiedRGB.publish(rosclassifiedRGB_msg);
+  //最后一起publish
+  //cout<<"origin" << pc_msg->fields<<endl;
 
-
-  // 插入ring字段，将RGB变成intensity幻影坦克
-  ros_msg.fields.resize(ros_msg.fields.size() + 1);
+  // 插入ring字段，将RGB变成intensity幻影坦克 XYZI[RT]
+  ros_msg.fields.resize(6);
   ros_msg.fields[3].name = "intensity";
-  ros_msg.fields[4] = ring_field;
+  ros_msg.fields[4] = ring_field;//20-27
+  ros_msg.fields[4].name = "ring";
   ros_msg.fields[4].offset = 20;
+  ros_msg.fields[5] = time_field;//28-36
+  ros_msg.fields[5].name = "time";
+  ros_msg.fields[5].offset = 28;
 
   // RGB解码方法
   float rgbtemp = 0;
@@ -249,10 +261,13 @@ void ROS_DEMO::pointcloudCallback(
   for(size_t i = 0; i < rosrgb_msg.width * rosrgb_msg.height; ++i) {
     memcpy(&new_data[i * ros_msg.point_step], &rosrgb_msg.data[i * rosrgb_msg.point_step], rosrgb_msg.point_step);
     memcpy(&new_data[i * ros_msg.point_step + 20], &ring[i], sizeof(uint16_t));
+    memcpy(&new_data[i * ros_msg.point_step + 28], &timestamp[i], sizeof(double));
   }
   ros_msg.data = new_data;
+  cout<<ros_msg.fields<<endl;
 
   pub_.publish(ros_msg);
+  pub_classifiedRGB.publish(rosclassifiedRGB_msg);
 }
 
 int main(int argc, char **argv) {
